@@ -39,3 +39,25 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Supabase
+.supabase/
+
+# Stripe CLI
+stripe-cli/
+
+# TempMail Pro specific
+*.db
+*.sqlite
+
+# API Keys (extra security)
+**/secrets/
+**/keys/
+
+# Cache
+.cache/
+.turbo/
+
+# IDE
+.vscode/
+.idea/
