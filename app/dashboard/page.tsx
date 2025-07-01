@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@/lib/auth';
 import { Mail, Zap, Users, Clock, Shield, Sparkles } from 'lucide-react';
 import { SmartConversionPrompts } from '@/components/conversion/SmartConversionPrompts';
+import { NotificationSystem } from '@/components/realtime/NotificationSystem';
+import { ExitIntentModal } from '@/components/conversion/ExitIntentModal';
+import { SwipeableEmailCard, useSwipeableEmailList } from '@/components/email/SwipeableEmailCard';
+import { PullToRefresh, useRefreshManager } from '@/components/mobile/PullToRefresh';
+import { useExitIntent, useExitIntentAnalytics } from '@/hooks/useExitIntent';
+import { useConversionTriggers } from '@/hooks/useBehavioralTriggers';
 import type { 
   User, 
   DashboardData, 
@@ -284,10 +290,31 @@ interface ActiveEmailsProps {
   emails: TempEmail[];
   onRefresh: () => void;
   onCopy: (email: string) => void;
+  onDelete?: (emailId: string) => void;
+  onArchive?: (emailId: string) => void;
+  onShare?: (email: string) => void;
+  onRefreshEmail?: (emailId: string) => void;
 }
 
-function ActiveEmails({ emails, onRefresh, onCopy }: ActiveEmailsProps) {
-  if (emails.length === 0) {
+function ActiveEmails({ 
+  emails, 
+  onRefresh, 
+  onCopy, 
+  onDelete,
+  onArchive,
+  onShare,
+  onRefreshEmail 
+}: ActiveEmailsProps) {
+  // Use swipeable email list hook for optimistic updates
+  const { emails: swipeableEmails, actions } = useSwipeableEmailList(emails, {
+    onCopy,
+    onDelete,
+    onArchive,
+    onShare,
+    onRefresh: onRefreshEmail,
+  });
+
+  if (swipeableEmails.length === 0) {
     return (
       <div className="glass rounded-2xl p-8 text-center">
         <Mail className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -310,11 +337,15 @@ function ActiveEmails({ emails, onRefresh, onCopy }: ActiveEmailsProps) {
       </div>
       
       <div className="space-y-3">
-        {emails.map((email, index) => (
-          <EmailCard 
+        {swipeableEmails.map((email, index) => (
+          <SwipeableEmailCard 
             key={email.id} 
             email={email} 
-            onCopy={onCopy} 
+            onCopy={actions.onCopy}
+            onDelete={actions.onDelete}
+            onArchive={actions.onArchive}
+            onShare={actions.onShare}
+            onRefresh={actions.onRefresh}
             index={index}
           />
         ))}
@@ -323,82 +354,6 @@ function ActiveEmails({ emails, onRefresh, onCopy }: ActiveEmailsProps) {
   );
 }
 
-// Email Card Component
-interface EmailCardProps {
-  email: TempEmail;
-  onCopy: (email: string) => void;
-  index: number;
-}
-
-function EmailCard({ email, onCopy, index }: EmailCardProps) {
-  const [timeLeft, setTimeLeft] = useState<string>('');
-
-  useEffect(() => {
-    const updateTimer = () => {
-      const now = new Date().getTime();
-      const expires = new Date(email.expires_at).getTime();
-      const difference = expires - now;
-
-      if (difference > 0) {
-        const hours = Math.floor(difference / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
-      } else {
-        setTimeLeft('Expired');
-      }
-    };
-
-    updateTimer();
-    const interval = setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [email.expires_at]);
-
-  return (
-    <div 
-      className="glass rounded-xl p-4 glass-hover animate-slide-up"
-      style={{ animationDelay: `${index * 100}ms` }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2 mb-2">
-            <code className="text-sm font-mono bg-muted px-2 py-1 rounded truncate">
-              {email.email_address}
-            </code>
-            <button
-              onClick={() => onCopy(email.email_address)}
-              className="glass-hover px-2 py-1 rounded text-xs font-medium transition-all"
-            >
-              Copy
-            </button>
-          </div>
-          
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <span className="flex items-center space-x-1">
-              <Clock className="w-3 h-3" />
-              <span>{timeLeft}</span>
-            </span>
-            <span className="flex items-center space-x-1">
-              <Mail className="w-3 h-3" />
-              <span>{email.messages_count} messages</span>
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          {email.custom_domain && (
-            <div className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full font-medium">
-              Premium
-            </div>
-          )}
-          {email.messages_count > 0 && (
-            <div className="w-2 h-2 bg-success rounded-full animate-pulse-glow"></div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // Main Dashboard Component
 export default function Dashboard() {
@@ -414,6 +369,33 @@ export default function Dashboard() {
   
   const router = useRouter();
   const supabase = createClientComponentClient();
+
+  // Exit intent state
+  const [showExitModal, setShowExitModal] = useState(false);
+
+  // Refresh management for mobile pull-to-refresh
+  const { refresh, canRefresh } = useRefreshManager();
+
+  // Analytics tracking
+  const analytics = useExitIntentAnalytics();
+
+  // Behavioral triggers for conversion optimization
+  useConversionTriggers();
+
+  // Exit intent detection
+  useExitIntent(() => {
+    // Only show exit intent modal for free users or users who haven't upgraded
+    if (data.user?.subscription_tier === 'free' && !showExitModal) {
+      setShowExitModal(true);
+    }
+  }, {
+    threshold: 50,
+    delay: 15000, // 15 seconds minimum on page
+    sensitivity: 3,
+    maxTriggers: 2, // Maximum 2 exit intent triggers per session
+    isMobileEnabled: true,
+    mobileScrollThreshold: 100,
+  });
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -516,9 +498,65 @@ export default function Dashboard() {
     try {
       await navigator.clipboard.writeText(email);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      // Error handling for copy
     }
   };
+
+  const handleDeleteEmail = async (emailId: string) => {
+    try {
+      // In a real app, this would call an API to delete the email
+      setData(prev => ({
+        ...prev,
+        emails: prev.emails.filter(email => email.id !== emailId)
+      }));
+    } catch (error) {
+      // Error handling for delete email
+    }
+  };
+
+  const handleArchiveEmail = async (emailId: string) => {
+    try {
+      // In a real app, this would call an API to archive the email
+      setData(prev => ({
+        ...prev,
+        emails: prev.emails.filter(email => email.id !== emailId)
+      }));
+    } catch (error) {
+      // Error handling for archive email
+    }
+  };
+
+  const handleShareEmail = async (email: string) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Temporary Email',
+          text: `Check out this temporary email: ${email}`,
+          url: window.location.href,
+        });
+      } else {
+        // Fallback to clipboard
+        await navigator.clipboard.writeText(email);
+      }
+    } catch (error) {
+      // Error handling for share email
+    }
+  };
+
+  const handleRefreshEmail = async (_emailId: string) => {
+    try {
+      // In a real app, this would refresh messages for a specific email
+      await loadDashboardData();
+    } catch (error) {
+      // Error handling for refresh email
+    }
+  };
+
+  // Pull-to-refresh handler
+  const handlePullToRefresh = useCallback(async () => {
+    if (!canRefresh()) return;
+    await refresh(loadDashboardData);
+  }, [canRefresh, refresh, loadDashboardData]);
 
   if (data.loading) {
     return (
@@ -567,50 +605,78 @@ export default function Dashboard() {
       metrics={data.metrics}
       onSignOut={handleSignOut}
     >
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          Welcome back, {data.user.full_name || 'User'}! 
-          <Sparkles className="inline-block w-6 h-6 ml-2 text-primary" />
-        </h1>
-        <p className="text-muted-foreground">
-          Manage your temporary emails and track your usage below.
-        </p>
-      </div>
+      <PullToRefresh onRefresh={handlePullToRefresh}>
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">
+            Welcome back, {data.user.full_name || 'User'}! 
+            <Sparkles className="inline-block w-6 h-6 ml-2 text-primary" />
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your temporary emails and track your usage below.
+          </p>
+        </div>
 
-      {/* Smart Conversion Prompts */}
-      <SmartConversionPrompts
-        user={data.user}
-        usage={data.usage}
-        emails={data.emails}
-        onUpgrade={handleUpgrade}
-      />
-
-      {/* Usage Statistics */}
-      <UsageStats 
-        usage={data.usage}
-        tier={data.user.subscription_tier}
-        onUpgrade={handleUpgrade}
-      />
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Email Generation */}
-        <EmailGenerationForm
+        {/* Smart Conversion Prompts */}
+        <SmartConversionPrompts
           user={data.user}
-          onEmailGenerated={handleEmailGenerated}
+          usage={data.usage}
+          emails={data.emails}
           onUpgrade={handleUpgrade}
         />
 
-        {/* Active Emails */}
-        <div className="glass rounded-2xl p-6">
-          <ActiveEmails
-            emails={data.emails}
-            onRefresh={loadDashboardData}
-            onCopy={handleCopy}
+        {/* Usage Statistics */}
+        <UsageStats 
+          usage={data.usage}
+          tier={data.user.subscription_tier}
+          onUpgrade={handleUpgrade}
+        />
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Email Generation */}
+          <EmailGenerationForm
+            user={data.user}
+            onEmailGenerated={handleEmailGenerated}
+            onUpgrade={handleUpgrade}
           />
+
+          {/* Active Emails */}
+          <div className="glass rounded-2xl p-6">
+            <ActiveEmails
+              emails={data.emails}
+              onRefresh={loadDashboardData}
+              onCopy={handleCopy}
+              onDelete={handleDeleteEmail}
+              onArchive={handleArchiveEmail}
+              onShare={handleShareEmail}
+              onRefreshEmail={handleRefreshEmail}
+            />
+          </div>
         </div>
-      </div>
+      </PullToRefresh>
+
+      {/* Real-time Notification System */}
+      <NotificationSystem
+        maxNotifications={5}
+        defaultDuration={5000}
+        playSound={true}
+        enableVisualAlerts={true}
+      />
+
+      {/* Exit Intent Modal */}
+      {data.user && (
+        <ExitIntentModal
+          isOpen={showExitModal}
+          onClose={() => setShowExitModal(false)}
+          user={data.user}
+          onUpgrade={(_tier) => {
+            setShowExitModal(false);
+            handleUpgrade();
+          }}
+          analytics={analytics}
+        />
+      )}
     </DashboardLayout>
   );
 }

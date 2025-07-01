@@ -1,10 +1,13 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClientComponentClient } from '@/lib/auth'
 import { Mail, Copy, RefreshCw, Clock, Crown, CheckCircle, AlertCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { useRealtimeEmails } from '@/hooks/useAdvancedPolling'
+import { ConnectionStatus } from '@/components/realtime/ConnectionStatus'
+import { useNotifications } from '@/components/realtime/NotificationSystem'
 
 interface TempEmail {
   id: string
@@ -25,18 +28,35 @@ interface EmailMessage {
 
 interface EmailGeneratorProps {
   userTier: string
+  userId: string
   onUpgrade: () => void
 }
 
-export function EmailGenerator({ userTier, onUpgrade }: EmailGeneratorProps) {
-  const [emails, setEmails] = useState<TempEmail[]>([])
+export function EmailGenerator({ userTier, userId, onUpgrade }: EmailGeneratorProps) {
   const [generating, setGenerating] = useState(false)
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [copiedEmail, setCopiedEmail] = useState('')
-  const [loading, setLoading] = useState(true)
 
   const supabase = createClientComponentClient()
+  const { notifyNewEmail, notifyError } = useNotifications()
+
+  // Use advanced polling for real-time email updates
+  const {
+    data: emailsData,
+    loading,
+    error: pollingError,
+    isPolling,
+    isOnline,
+    consecutiveErrors,
+    lastSuccessTime,
+    lastErrorTime,
+    startPolling,
+    stopPolling,
+    forcePoll
+  } = useRealtimeEmails(userId)
+
+  const emails = emailsData?.emails || []
 
   const domainOptions = [
     { domain: 'random', name: 'Random Domain', tier: 'free' },
@@ -46,25 +66,18 @@ export function EmailGenerator({ userTier, onUpgrade }: EmailGeneratorProps) {
     { domain: 'techsci.tech', name: 'TechSci Tech', tier: 'pro', icon: '👑' },
   ]
 
+  // Start polling when component mounts
   useEffect(() => {
-    fetchEmails()
-    const interval = setInterval(fetchEmails, 5000) // Refresh every 5 seconds
-    return () => clearInterval(interval)
-  }, [])
+    startPolling()
+    return () => stopPolling()
+  }, [startPolling, stopPolling])
 
-  const fetchEmails = async () => {
-    try {
-      const response = await fetch('/api/emails')
-      if (response.ok) {
-        const data = await response.json()
-        setEmails(data.emails)
-      }
-    } catch (err) {
-      console.error('Error fetching emails:', err)
-    } finally {
-      setLoading(false)
+  // Handle polling errors
+  useEffect(() => {
+    if (pollingError) {
+      notifyError('Connection Error', 'Failed to fetch latest emails')
     }
-  }
+  }, [pollingError, notifyError])
 
   const generateEmail = async () => {
     setGenerating(true)
@@ -93,8 +106,13 @@ export function EmailGenerator({ userTier, onUpgrade }: EmailGeneratorProps) {
         return
       }
 
-      // Refresh emails list
-      await fetchEmails()
+      // Force refresh emails list
+      await forcePoll()
+      
+      // Notify user of successful email generation
+      if (data.email) {
+        notifyNewEmail(data.email)
+      }
 
     } catch (err) {
       setError('Network error occurred')
@@ -134,6 +152,19 @@ export function EmailGenerator({ userTier, onUpgrade }: EmailGeneratorProps) {
 
   return (
     <div className="space-y-6">
+      {/* Connection Status */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Generate Email</h2>
+        <ConnectionStatus
+          isOnline={isOnline}
+          isPolling={isPolling}
+          consecutiveErrors={consecutiveErrors}
+          lastSuccessTime={lastSuccessTime}
+          lastErrorTime={lastErrorTime}
+          onRetry={forcePoll}
+        />
+      </div>
+
       {/* Domain Selection */}
       <div>
         <h3 className="text-lg font-medium text-gray-900 mb-4">Choose Domain</h3>
@@ -217,7 +248,17 @@ export function EmailGenerator({ userTier, onUpgrade }: EmailGeneratorProps) {
       {/* Generated Emails */}
       {emails.length > 0 && (
         <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Your Temporary Emails</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-medium text-gray-900">Your Temporary Emails</h3>
+            <button
+              onClick={forcePoll}
+              disabled={loading}
+              className="flex items-center space-x-2 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 bg-gray-50 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
           <div className="space-y-4">
             {emails.map((email) => (
               <div key={email.id} className="bg-white border border-gray-200 rounded-lg p-4">
