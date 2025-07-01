@@ -18,10 +18,23 @@ const EmailGenerator = ({ email, timeLeft, onExtend, onUpgrade }: any) => (
 );
 
 const ConversionOptimizer = ({ user, messageCount, timeLeft, onUpgrade }: any) => (
-    <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-8" role="alert">
-        <p className="font-bold">Conversion Optimizer</p>
-        <p>User: {user ? user.isPremium ? 'Premium' : 'Free' : 'Guest'}, Messages: {messageCount}, Time Left: {timeLeft}</p>
-        <button onClick={onUpgrade} className="bg-green-500 text-white px-4 py-2 rounded mt-2">Upgrade Now</button>
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
+        <div className="flex items-center justify-between">
+            <div>
+                <p className="font-semibold text-yellow-800">Conversion Optimizer</p>
+                <p className="text-yellow-700">
+                    User: {user ? user.isPremium ? 'Premium' : 'Free' : 'Guest'}, 
+                    Messages: {messageCount}, 
+                    Time Left: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                </p>
+            </div>
+            <button 
+                onClick={onUpgrade} 
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
+                Upgrade Now
+            </button>
+        </div>
     </div>
 );
 

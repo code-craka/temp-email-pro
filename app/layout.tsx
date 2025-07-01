@@ -15,12 +15,12 @@ export default function RootLayout({
       <head>
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXX"></script>
       </head>
-      <body>
-        <div className="min-h-screen bg-white">
+      <body className="antialiased">
+        <div className="min-h-screen bg-background">
           {/* Header Ad */}
           <AdBanner slot="header" />
           
-          <main className="container mx-auto px-4">
+          <main className="container mx-auto px-4 py-8 max-w-6xl">
             {children}
           </main>
           

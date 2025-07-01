@@ -241,3 +241,6 @@ export function CustomDomainSelector({
           </ul>
         </div>
       )}
+    </div>
+  );
+}

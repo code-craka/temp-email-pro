@@ -215,7 +215,7 @@ export const PREMIUM_DOMAINS = {
     tier: 'extended',
     category: 'business'
   },
-  'techsci.tech':.
+  'techsci.tech': {
     name: 'TechSci Tech',
     description: 'Premium tech domain for professionals',
     tier: 'pro',
@@ -382,8 +382,22 @@ export class EmailService {
 }
 
 export class PremiumFeatureRequired extends Error {
-  constructor(message: string, public upgradeUrl = '/pricing') {
+  constructor(
+    message: string, 
+    public upgradeUrl = '/pricing',
+    public requiredTier?: string
+  ) {
     super(message);
     this.name = 'PremiumFeatureRequired';
   }
+}
+
+// Simple function for API usage
+export async function generateEmail(
+  userProfile: any, 
+  options?: { customDomain?: string }
+): Promise<string> {
+  const service = new EmailService();
+  const result = await service.generateEmail(userProfile, options);
+  return result.email;
 }
