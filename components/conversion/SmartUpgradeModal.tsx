@@ -7,9 +7,6 @@ import {
   Zap, 
   Star, 
   CheckCircle, 
-  Clock,
-  Mail,
-  Globe,
   Shield,
   Sparkles
 } from 'lucide-react'

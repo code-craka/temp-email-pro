@@ -2,6 +2,20 @@
 
 This guide covers deploying TempEmailPro to production environments, including Vercel, custom servers, and container orchestration.
 
+## Recent Updates (v1.1.1)
+
+### Performance Improvements
+- **Bundle Optimization**: Reduced build size through unused import elimination
+- **Type Safety**: Enhanced production builds with better TypeScript compilation
+- **Error Handling**: Improved production error boundaries and logging
+- **Build Speed**: Faster builds with optimized dependencies
+
+### Production Readiness
+- **Code Quality**: Eliminated linting errors that could affect production builds
+- **Type Definitions**: Better TypeScript support for production monitoring
+- **Import Optimization**: Reduced bundle size for faster loading
+- **Error Boundaries**: Enhanced error handling for better user experience
+
 ## Prerequisites
 
 - Node.js 18+ 

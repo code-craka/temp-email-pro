@@ -12,7 +12,6 @@ import {
   Sparkles
 } from 'lucide-react'
 import { User } from '@/app/dashboard/page'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
 interface EmailGenerationSectionProps {
   user: User
@@ -201,7 +200,7 @@ export function EmailGenerationSection({ user, onEmailGenerated, onUpgrade }: Em
       setCustomUsername('') // Clear custom username after success
       onEmailGenerated() // Refresh the dashboard
 
-    } catch (err) {
+    } catch {
       setError('Network error occurred. Please try again.')
     } finally {
       setGenerating(false)

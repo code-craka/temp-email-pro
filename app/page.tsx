@@ -2,8 +2,43 @@
 
 import { useState, useEffect } from 'react';
 
+// Types
+interface User {
+  isPremium: boolean;
+}
+
+interface EmailMessage {
+  id: string;
+  from: string;
+  subject: string;
+  body: string;
+}
+
+interface EmailGeneratorProps {
+  email: string;
+  timeLeft: number;
+  onExtend: () => void;
+  onUpgrade: () => void;
+}
+
+interface ConversionOptimizerProps {
+  user: User | null;
+  messageCount: number;
+  timeLeft: number;
+  onUpgrade: () => void;
+}
+
+interface AdBannerProps {
+  slot: string;
+  className?: string;
+}
+
+interface InboxViewProps {
+  messages: EmailMessage[];
+}
+
 // Mock Components - Replace with actual implementations
-const EmailGenerator = ({ email, timeLeft, onExtend, onUpgrade }: any) => (
+const EmailGenerator = ({ email, timeLeft, onExtend, onUpgrade }: EmailGeneratorProps) => (
     <div className="bg-gray-100 p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-bold mb-4">Your Temporary Email</h2>
         <div className="text-3xl font-mono p-4 bg-white border rounded mb-4">{email}</div>
@@ -17,7 +52,7 @@ const EmailGenerator = ({ email, timeLeft, onExtend, onUpgrade }: any) => (
     </div>
 );
 
-const ConversionOptimizer = ({ user, messageCount, timeLeft, onUpgrade }: any) => (
+const ConversionOptimizer = ({ user, messageCount, timeLeft, onUpgrade }: ConversionOptimizerProps) => (
     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-8">
         <div className="flex items-center justify-between">
             <div>
@@ -38,17 +73,17 @@ const ConversionOptimizer = ({ user, messageCount, timeLeft, onUpgrade }: any) =
     </div>
 );
 
-const AdBanner = ({ slot, className }: any) => (
+const AdBanner = ({ slot, className }: AdBannerProps) => (
     <div className={`bg-gray-200 p-4 text-center ${className}`}>Ad Banner: {slot}</div>
 );
 
-const InboxView = ({ messages }: any) => (
+const InboxView = ({ messages }: InboxViewProps) => (
     <div>
         <h2 className="text-2xl font-bold mb-4">Inbox</h2>
         {messages.length === 0 ? (
             <p>No messages yet.</p>
         ) : (
-            messages.map((msg: any) => (
+            messages.map((msg: EmailMessage) => (
                 <div key={msg.id} className="border p-4 mb-2 rounded">
                     <p><strong>From:</strong> {msg.from}</p>
                     <p><strong>Subject:</strong> {msg.subject}</p>
@@ -62,8 +97,8 @@ const InboxView = ({ messages }: any) => (
 export default function HomePage() {
   const [email, setEmail] = useState<string>('');
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
-  const [messages, setMessages] = useState<any[]>([]);
-  const [user, setUser] = useState<any | null>(null);
+  const [messages, setMessages] = useState<EmailMessage[]>([]);
+  const [user] = useState<User | null>(null);
 
   // Auto-generate email on page load
   useEffect(() => {

@@ -82,7 +82,7 @@ export class MailTmProvider implements EmailProvider {
     }
   }
 
-  async getMessages(email: string): Promise<Message[]> {
+  async getMessages(_email: string): Promise<Message[]> {
     if (!this.token) {
       throw new Error('Not authenticated');
     }
@@ -162,9 +162,9 @@ export class TempMailProvider implements EmailProvider {
     }
   }
 
-  async getMessages(email: string): Promise<Message[]> {
+  async getMessages(_email: string): Promise<Message[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/auth/${email}`);
+      const response = await fetch(`${this.baseUrl}/auth/${_email}`);
       const data = await response.json();
       
       if (!data.email) {
@@ -230,7 +230,7 @@ export class EmailService {
     new TempMailProvider()
   ];
 
-  async generateEmail(user: any, options?: {
+  async generateEmail(user: Record<string, any>, options?: {
     customDomain?: string;
     retentionHours?: number;
   }): Promise<{ email: string; expiresAt: Date; provider: string }> {
@@ -312,9 +312,9 @@ export class EmailService {
     throw new Error('All email providers are currently unavailable. Please try again in a few minutes.');
   }
 
-  async getMessages(email: string): Promise<Message[]> {
+  async getMessages(_email: string): Promise<Message[]> {
     // Find which provider was used for this email
-    const emailRecord = await this.getEmailRecord(email);
+    const emailRecord = await this.getEmailRecord(_email);
     if (!emailRecord) {
       throw new Error('Email not found');
     }
@@ -325,7 +325,7 @@ export class EmailService {
     }
 
     try {
-      return await provider.getMessages(email);
+      return await provider.getMessages(_email);
     } catch (error) {
       console.error('Failed to fetch messages:', error);
       return [];

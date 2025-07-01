@@ -14,8 +14,6 @@ import {
   X,
   Home,
   CreditCard,
-  FileText,
-  Shield,
   Bell,
   Globe
 } from 'lucide-react'

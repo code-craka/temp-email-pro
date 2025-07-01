@@ -1,7 +1,23 @@
 {
   "name": "temp-email-pro",
-  "version": "0.1.0",
+  "version": "1.1.1",
   "private": true,
+  "description": "A high-revenue SaaS platform for temporary email services with freemium subscription model",
+  "author": "Sayem Abdullah Rihan (Code-Craka)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/code-craka/temp-email-pro"
+  },
+  "license": "MIT",
+  "keywords": [
+    "temporary-email",
+    "saas",
+    "nextjs",
+    "typescript",
+    "tailwindcss",
+    "supabase",
+    "stripe"
+  ],
   "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",

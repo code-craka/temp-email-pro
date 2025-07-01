@@ -12,8 +12,6 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  ExternalLink,
-  Trash2,
   AlertCircle
 } from 'lucide-react'
 import { TempEmail, User, EmailMessage } from '@/app/dashboard/page'

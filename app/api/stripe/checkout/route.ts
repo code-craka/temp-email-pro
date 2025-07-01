@@ -1,10 +1,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { createClient } from '@supabase/supabase-js';
 
 // TODO: Replace with actual user retrieval logic
-async function getCurrentUser(request: NextRequest) {
+async function getCurrentUser() {
     return {
         id: 'user_123',
         email: 'test@example.com',
@@ -15,7 +14,7 @@ async function getCurrentUser(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { priceId, tier } = await request.json();
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

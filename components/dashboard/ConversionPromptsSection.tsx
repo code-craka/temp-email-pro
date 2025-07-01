@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { 
   Crown, 
-  Zap, 
   Clock, 
   TrendingUp, 
   Star, 

@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClientComponentClient } from '@/lib/auth'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react'
 
@@ -16,7 +15,6 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false)
   
   const supabase = createClientComponentClient()
-  const router = useRouter()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,7 +37,7 @@ export default function RegisterPage() {
       } else {
         setSuccess(true)
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
@@ -56,7 +54,7 @@ export default function RegisterPage() {
         }
       })
       if (error) setError(error.message)
-    } catch (err) {
+    } catch {
       setError('Failed to sign up with Google')
     } finally {
       setLoading(false)

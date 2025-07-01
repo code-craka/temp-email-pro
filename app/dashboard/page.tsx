@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@/lib/auth';
 import { Mail, Zap, Users, Clock, Shield, Sparkles } from 'lucide-react';
@@ -210,9 +210,16 @@ function UsageStats({ usage, tier, onUpgrade }: UsageStatsProps) {
     {
       label: 'Messages Received',
       current: usage?.today.emails_received || 0,
-      limit: usage?.limits.emails_per_day * 3 || 15,
+      limit: usage?.limits.emails_per_day ? usage?.limits.emails_per_day * 3 : 15,
       icon: Zap,
       color: 'text-success'
+    },
+    {
+      label: 'Storage Used',
+      current: usage?.today.storage_used || 0,
+      limit: usage?.limits.storage_limit || 10,
+      icon: Sparkles,
+      color: 'text-primary'
     },
     {
       label: 'API Calls',
@@ -408,11 +415,7 @@ export default function Dashboard() {
   const router = useRouter();
   const supabase = createClientComponentClient();
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setData(prev => ({ ...prev, loading: true, error: null }));
 
@@ -487,7 +490,11 @@ export default function Dashboard() {
         error: error instanceof Error ? error.message : 'Failed to load dashboard'
       }));
     }
-  };
+  }, [supabase.auth, router]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

@@ -4,7 +4,6 @@ import {
   Mail, 
   MessageSquare, 
   Globe, 
-  TrendingUp, 
   Crown,
   AlertTriangle,
   CheckCircle,
@@ -33,13 +32,6 @@ const getTierLimits = (tier: string) => {
   }
 }
 
-const getUsageColor = (current: number, limit: number) => {
-  const percentage = (current / limit) * 100
-  if (percentage >= 90) return 'text-red-600 bg-red-50 border-red-200'
-  if (percentage >= 75) return 'text-orange-600 bg-orange-50 border-orange-200'
-  if (percentage >= 50) return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-  return 'text-green-600 bg-green-50 border-green-200'
-}
 
 const getProgressColor = (current: number, limit: number) => {
   const percentage = (current / limit) * 100

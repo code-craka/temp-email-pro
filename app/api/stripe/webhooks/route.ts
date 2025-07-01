@@ -2,12 +2,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { headers } from 'next/headers';
+import Stripe from 'stripe';
 
 // TODO: Replace with your Supabase client
 const supabase = {
     from: (table: string) => ({
-        update: (data: any) => ({
-            eq: (column: string, value: any) => {
+        update: (data: Record<string, unknown>) => ({
+            eq: (column: string, value: unknown) => {
                 console.log(`Supabase: Updating ${table} where ${column} = ${value} with`, data);
                 return Promise.resolve();
             }
@@ -16,14 +17,15 @@ const supabase = {
 };
 
 // TODO: Replace with your revenue tracking logic
-async function trackRevenue(data: any) {
+async function trackRevenue(data: Record<string, unknown>) {
     console.log("Tracking revenue:", data);
     return Promise.resolve();
 }
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
-  const signature = headers().get('stripe-signature');
+  const headersList = await headers();
+  const signature = headersList.get('stripe-signature');
 
   let event;
   try {
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
       signature!,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
@@ -51,8 +53,9 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
-async function handleSubscriptionSuccess(session: any) {
-  const { userId, tier } = session.metadata;
+async function handleSubscriptionSuccess(session: Stripe.Checkout.Session) {
+  const userId = session.metadata?.userId;
+  const tier = session.metadata?.tier;
   
   // Update user subscription
   await supabase
@@ -67,18 +70,18 @@ async function handleSubscriptionSuccess(session: any) {
   // Track revenue event
   await trackRevenue({
     userId,
-    amount: session.amount_total / 100,
+    amount: (session.amount_total || 0) / 100,
     tier,
     event: 'subscription_started'
   });
 }
 
-async function handlePaymentSuccess(invoice: any) {
+async function handlePaymentSuccess(invoice: Stripe.Invoice) {
     // Logic to handle successful payment
     console.log("Payment successful for invoice:", invoice.id);
 }
 
-async function handleSubscriptionCancelled(subscription: any) {
+async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
     // Logic to handle subscription cancellation
     console.log("Subscription cancelled:", subscription.id);
 }

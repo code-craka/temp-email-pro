@@ -362,6 +362,20 @@ Use the following test data in development:
 
 ---
 
-**Version**: 1.0.0  
+**Version**: 1.1.1  
 **Last Updated**: January 1, 2025  
 **Maintained by**: Sayem Abdullah Rihan (Code-Craka)
+
+## Recent Updates (v1.1.1)
+
+### API Improvements
+- **Enhanced Type Safety**: Improved TypeScript definitions for all API endpoints
+- **Error Handling**: Standardized error response patterns across all routes
+- **Performance Optimization**: Reduced response times through code optimization
+- **Security Enhancement**: Improved parameter validation and sanitization
+
+### Code Quality Updates
+- **Import Optimization**: Reduced bundle size through unused import removal
+- **Better Documentation**: Enhanced inline code documentation and JSDoc comments
+- **Consistent Patterns**: Standardized request/response handling across endpoints
+- **Webhook Reliability**: Improved Stripe webhook handling with proper type definitions

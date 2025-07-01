@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getUser, getUserProfile } from '@/lib/auth'
 import { generateEmail } from '@/lib/email-service'
 import { PremiumFeatureRequired } from '@/lib/pricing'
-import { addDays, addHours } from 'date-fns'
+import { addHours } from 'date-fns'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,14 +24,14 @@ export async function POST(request: NextRequest) {
 
     // Check daily usage limits
     const today = new Date().toISOString().split('T')[0]
-    const { data: dailyUsage } = await supabase
+    const { data: _dailyUsage } = await supabase
       .from('daily_usage')
       .select('emails_generated')
       .eq('user_id', user.id)
       .eq('date', today)
       .single()
 
-    const emailsGenerated = dailyUsage?.emails_generated || 0
+    // const emailsGenerated = dailyUsage?.emails_generated || 0
 
     // Generate email with the service
     try {
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const user = await getUser()
     
